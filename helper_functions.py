@@ -179,8 +179,8 @@ def render_playfield(playfield):
 	playfield[playfield == "5"] = "✨"
 	playfield[playfield == "6"] = "🚧"
 	playfield[playfield == "7"] = "💣"
-	playfield[playfield == "8"] = "💰"
-	playfield[playfield == "9"] = "🚨"
+	playfield[playfield == "8"] = "♦️"
+	playfield[playfield == "9"] = "🔹"
 
 	string = ""
 	for i in range(10):
@@ -215,16 +215,24 @@ def cops_move(playfield, occupied, lucky):
 	Либо делает то, что сказано, обновляя playfield 
 	Возвращает новый playfield
 	"""
-	print("Ход копов!")
-	print("Доступные команды:\n- move row column : передвинуться на координату "
-		  "(row,column)\n- block row column : поставить блок на координату (row,column)")
+	
 	cops_raw_input = input("> ")
 	cops_input = cops_raw_input.split()
+
+	if len(cops_input) != 3:
+		print("Координаты введены неправильно, проверьте правильность ввода.")
+		return cops_move(playfield, occupied, lucky)
 
 	# если игрок решил передвинуться
 	if cops_input[0] == "move":
 		# надо узнать, где игрок находится сейчас
 		# первое вроде y, второе – x
+
+		available_to_move = np.where(playfield == 0)
+
+		available_to_move = [[row, col] for row, col in zip(available_to_move[0], available_to_move[1])]
+
+
 		current_cops_coords = np.where(playfield == 3)
 		cops_row = current_cops_coords[0][0]
 		cops_column = current_cops_coords[1][0]
@@ -237,11 +245,24 @@ def cops_move(playfield, occupied, lucky):
 							   [cops_row+1, cops_column]]
 
 		# URGENT TODO: нужна проверка на здания и монетки!
-		cops_move_allowed_coords = [i for i in cops_possible_coords if all(n in range(0, 10) for n in i)]
+		cops_move_allowed_coords = [i for i in cops_possible_coords if all(n in range(0, 10) for n in i) and i in available_to_move]
+		print(cops_move_allowed_coords)
+		# print(occupied)
+		cops_move_allowed_coords = list(filter(lambda x: x in available_to_move, cops_move_allowed_coords))
+		print(cops_move_allowed_coords)
 		
 		# смотрим, что захотел игрок
-		cops_input_row = cops_input[1]
-		cops_input_column = cops_input[2]
+		cops_input_row = int(cops_input[1])
+		cops_input_column = int(cops_input[2])
+
+		if [cops_input_row, cops_input_column] in cops_move_allowed_coords:
+			playfield[cops_row][cops_column] = 9
+			occupied.append([cops_row, cops_column])
+			playfield[cops_input_row][cops_input_column] = 3
+			return playfield, occupied, lucky
+		else:
+			print("Эти координаты недоступны для перемещения. Пожалуйста, уточните ввод")
+			return cops_move(playfield, occupied, lucky)
 
 		# если его координаты находятся в списке допустимых, то всё ок, 
 		# передвинуть фигурку туда, а на прошлую координату 

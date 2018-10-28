@@ -70,7 +70,10 @@ while True:
 	render_playfield(preturn_playfield)
 	print("\n\n")
 	if turn == 3:
-		preturn_playfield = cops_move(playfield, occupied_coords, lucky_coins_coordinates)
+		print("Ход копов!")
+		print("Доступные команды:\n- move row column : передвинуться на координату "
+		  "(row,column)\n- block row column : поставить блок на координату (row,column)")
+		preturn_playfield, occupied_coords, lucky_coins_coordinates = cops_move(playfield, occupied_coords, lucky_coins_coordinates)
 		turn -= 1
 		continue
 	else:
