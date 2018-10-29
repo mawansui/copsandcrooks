@@ -152,6 +152,14 @@ def generate_house_coordinates(playfield):
 
 	return playfield, occupied_coords, lucky_coins_coordinates
 
+# Сколько монет удачи есть у бандитов и копов (по нулям в начале игры)
+crooks_coins = 0
+cops_coins = 0
+
+# Сколько блоков есть у бандитов и копов в начале игры
+crooks_blocks = 1
+cops_blocks = 3
+
 def render_playfield(playfield):
 	"""
 	Принимает игровое поле в виде массива np-массивов
@@ -185,8 +193,8 @@ def render_playfield(playfield):
 	string = ""
 	for i in range(10):
 		string += f" {i} |"
-	print("  |"+ string)
-	print("  " + "_"*40)
+	print("  |"+ string + f"\tCops lucky coins: {cops_coins}, cops blocks: {cops_blocks}")
+	print("  " + "_"*40 + f"\tCrooks lucky coins: {crooks_coins}, crooks_blocks: {crooks_blocks}")
 	for index, row in enumerate(playfield.astype(str)):
 		final = ""
 		for item in row:
@@ -199,14 +207,6 @@ def render_playfield(playfield):
 		# print("| " + row_string + " |")
 		# print("| " + "_"*len(row_string) + " |")
 
-# Сколько монет удачи есть у бандитов и копов (по нулям в начале игры)
-crooks_coins = 0
-cops_coins = 0
-
-# Сколько блоков есть у бандитов и копов в начале игры
-crooks_blocks = 1
-cops_blocks = 3
-
 def cops_move(playfield, occupied, lucky):
 	"""
 	Принимает все координаты
@@ -215,6 +215,8 @@ def cops_move(playfield, occupied, lucky):
 	Либо делает то, что сказано, обновляя playfield 
 	Возвращает новый playfield
 	"""
+
+	global cops_coins
 	
 	cops_raw_input = input("> ")
 	cops_input = cops_raw_input.split()
@@ -245,10 +247,13 @@ def cops_move(playfield, occupied, lucky):
 							   [cops_row+1, cops_column]]
 
 		# URGENT TODO: нужна проверка на здания и монетки!
+		# UPD: проверка на здания работает, а проверка на монетки не дает сходить наступив на монетку
 		cops_move_allowed_coords = [i for i in cops_possible_coords if all(n in range(0, 10) for n in i) and i in available_to_move]
 		print(cops_move_allowed_coords)
 		# print(occupied)
 		cops_move_allowed_coords = list(filter(lambda x: x in available_to_move, cops_move_allowed_coords))
+		# добавляем координаты монеток удачи как разрешенные, потому что на них нужно ходить
+		cops_move_allowed_coords.extend(lucky)
 		print(cops_move_allowed_coords)
 		
 		# смотрим, что захотел игрок
@@ -256,10 +261,20 @@ def cops_move(playfield, occupied, lucky):
 		cops_input_column = int(cops_input[2])
 
 		if [cops_input_row, cops_input_column] in cops_move_allowed_coords:
-			playfield[cops_row][cops_column] = 9
-			occupied.append([cops_row, cops_column])
-			playfield[cops_input_row][cops_input_column] = 3
-			return playfield, occupied, lucky
+			# надо проверить, совпадает ли координата хода с координатой монетки удачи
+			# если совпадает, надо добвить копам одну монетку
+			if [cops_input_row, cops_input_column] in lucky:
+				cops_coins += 1
+				playfield[cops_row][cops_column] = 9
+				occupied.append([cops_row, cops_column])
+				playfield[cops_input_row][cops_input_column] = 3
+				lucky.remove([cops_input_row, cops_input_column])
+				return playfield, occupied, lucky
+			else:
+				playfield[cops_row][cops_column] = 9
+				occupied.append([cops_row, cops_column])
+				playfield[cops_input_row][cops_input_column] = 3
+				return playfield, occupied, lucky
 		else:
 			print("Эти координаты недоступны для перемещения. Пожалуйста, уточните ввод")
 			return cops_move(playfield, occupied, lucky)
